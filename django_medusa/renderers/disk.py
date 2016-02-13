@@ -35,6 +35,9 @@ def _disk_render_path(args):
         outpath = os.path.join(DEPLOY_DIR, realpath)
 
         resp = client.get(path)
+        if resp.status_code == 301 or resp.status_code == 302:
+            print('%s - redirect - skipping...' % path)
+            return None
         if resp.status_code != 200:
             raise Exception
         if needs_ext:
@@ -53,7 +56,11 @@ def _disk_render_path(args):
                 outpath += "index.html"
         print(outpath)
         with open(outpath, 'wb') as f:
-            f.write(resp.content)
+            if resp.streaming:
+                for chunk in resp.streaming_content:
+                    f.write(chunk)
+            else:
+                f.write(resp.content)
 
 
 class DiskStaticSiteRenderer(BaseStaticSiteRenderer):
